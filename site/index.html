@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quickstart: create a voice agent in five minutes · Vapi</title>
+<meta name="description" content="Create a Vapi voice agent and talk to it in your browser in about five minutes, using one API call to create it and the Web SDK to connect.">
+<link rel="canonical" href="https://manicule-sample-brief-posg.vercel.app/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Quickstart: create a voice agent in five minutes · Vapi">
+<meta property="og:description" content="Create a Vapi voice agent and talk to it in your browser in about five minutes.">
+<meta property="og:url" content="https://manicule-sample-brief-posg.vercel.app/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Vapi Quickstart","description":"Create a voice agent and talk to it in your browser in about five minutes.","dateModified":"2026-07-01","author":{"@type":"Organization","name":"Vapi","url":"https://vapi.ai"},"publisher":{"@type":"Organization","name":"Vapi"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"HowTo","name":"Create a voice agent with Vapi","step":[{"@type":"HowToStep","name":"Create an agent","text":"Create an assistant with one API call using your private key."},{"@type":"HowToStep","name":"Connect from your app","text":"Install the Web SDK and create a client with your public key."},{"@type":"HowToStep","name":"Talk to it","text":"Start the call from a user click so the browser can grant the microphone."}]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Light editorial by default (Vapi's real cream + ink); a restrained monochrome dark on toggle.
+     Colour is functional only: the teal appears on links and string literals, nowhere decorative.
+     Diagrams are line-art drawn in currentColor, so one SVG reads correctly in both themes. */
+  :root{
+    --teal:#0B8270; --teal-2:#0A6E5F;
+    --bg:#FAF7EF; --raise:#FFFFFF; --raise-2:#F3EEE1;
+    --line:rgba(10,16,32,.11); --line-2:rgba(10,16,32,.20);
+    --text:rgba(10,16,32,.90); --muted:rgba(10,16,32,.56); --faint:rgba(10,16,32,.40);
+    --diagram:rgba(10,16,32,.82); --sel:rgba(10,16,32,.12);
+    --sans:'Inter',ui-sans-serif,system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+    --maxw:1240px;
+  }
+  html[data-theme="dark"]{
+    --teal:#35C0A6; --teal-2:#5FD3BE;
+    --bg:#05070D; --raise:#0A0E16; --raise-2:#0D121B;
+    --line:rgba(255,250,235,.10); --line-2:rgba(255,250,235,.18);
+    --text:rgba(255,250,235,.90); --muted:rgba(255,250,235,.55); --faint:rgba(255,250,235,.37);
+    --diagram:rgba(255,250,235,.88); --sel:rgba(255,250,235,.14);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.72;
+       letter-spacing:-.006em;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  a{color:var(--teal);text-decoration:none}
+  a:hover{color:var(--teal-2)}
+  ::selection{background:var(--sel)}
+  code{font-family:var(--mono);font-size:.84em;background:var(--raise-2);border:1px solid var(--line);
+       padding:.5px 5px;border-radius:5px;letter-spacing:0}
+
+  .top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:18px;height:58px;padding:0 26px;
+       background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px) saturate(1.2);
+       border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:16px;letter-spacing:-.02em}
+  .brand .mark{width:14px;height:14px;border-radius:4px;background:var(--text)}
+  .search{flex:1;max-width:400px;display:flex;align-items:center;height:34px;padding:0 12px;color:var(--faint);
+          font-size:13.5px;border:1px solid var(--line);border-radius:9px;background:var(--raise)}
+  .search .k{margin-left:auto;font-family:var(--mono);font-size:11px;border:1px solid var(--line);
+             border-radius:5px;padding:1px 6px;color:var(--faint)}
+  .spacer{flex:1}
+  .ghost{border:1px solid var(--line);background:transparent;color:var(--muted);height:32px;padding:0 13px;
+         border-radius:8px;font:500 13px var(--sans);cursor:pointer;transition:.15s}
+  .ghost:hover{border-color:var(--line-2);color:var(--text)}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;display:grid;grid-template-columns:250px minmax(0,1fr) 210px}
+  .side{border-right:1px solid var(--line);padding:30px 14px 80px;position:sticky;top:58px;
+        height:calc(100vh - 58px);overflow:auto}
+  .side::-webkit-scrollbar,.toc::-webkit-scrollbar,main::-webkit-scrollbar{width:0}
+  .side .g{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);margin:22px 12px 8px;font-weight:600}
+  .side a{display:block;color:var(--muted);padding:6px 12px;border-radius:7px;font-size:13.5px;transition:.12s}
+  .side a:hover{background:var(--raise-2);color:var(--text)}
+  .side a.on{color:var(--text);background:var(--raise-2);font-weight:600}
+
+  main{padding:48px 60px 140px;min-width:0}
+  .crumb{font-size:12.5px;color:var(--faint);margin-bottom:16px;letter-spacing:0}
+  h1{font-size:40px;line-height:1.08;letter-spacing:-.033em;font-weight:600;margin:0 0 .3em}
+  .lede{font-size:19px;line-height:1.55;color:var(--muted);margin:.1em 0 1.1em;max-width:54ch;letter-spacing:-.012em}
+  .meta{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--faint);margin-bottom:38px}
+  .meta .pill{border:1px solid var(--line);border-radius:20px;padding:3px 11px;color:var(--muted)}
+  /* Section headings step clearly off 16px body; the gap above tightens after a self-contained
+     block (figure, callout) and opens up after running prose, so the rhythm is composed not stamped. */
+  h2{font-size:26px;letter-spacing:-.02em;font-weight:600;margin:2.2em 0 .5em;scroll-margin-top:80px}
+  figure + h2, .note + h2{margin-top:1.5em}
+  p{max-width:66ch;color:var(--text)}
+  ul{max-width:66ch;padding-left:1.15em}
+  li{margin:.4em 0}
+  li::marker{color:var(--faint)}
+  strong{font-weight:600}
+
+  /* figures are line-art, not cards: they sit on the page with air, no frame */
+  figure{margin:34px 0;color:var(--diagram)}
+  .frame{padding:6px 2px}
+  figure svg{display:block;width:100%;height:auto}
+  figcaption{color:var(--faint);font-size:12.5px;margin-top:14px;letter-spacing:0;max-width:66ch}
+
+  /* callouts stay rare and load-bearing; the label is sentence-case so it reads unlike the tracked-caps
+     used for nav/TOC regions. 'Result' lines are demoted to a plain inline note, not a box. */
+  .note{border:1px solid var(--line);background:var(--raise);border-radius:13px;padding:15px 17px;margin:22px 0;max-width:70ch}
+  .note .k{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:7px}
+  .note .k::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--faint)}
+  .note p{margin:0;font-size:14.5px;color:var(--text)}
+  .note.res{border:0;background:none;border-radius:0;padding:0;margin:12px 0;max-width:66ch}
+  .note.res .k{display:inline;margin:0 .5em 0 0;color:var(--faint)}
+  .note.res .k::before{display:none}
+  .note.res p{display:inline;font-size:14.5px;color:var(--muted)}
+
+  /* code */
+  .code{margin:18px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--raise)}
+  .code .bar{display:flex;align-items:center;height:42px;padding:0 10px 0 16px;border-bottom:1px solid var(--line);gap:2px}
+  .tab{border:0;background:transparent;color:var(--faint);font:500 12.5px var(--sans);padding:7px 12px;border-radius:7px;cursor:pointer;transition:.12s}
+  .tab:hover{color:var(--muted)} .tab.on{background:var(--raise-2);color:var(--text)}
+  .file{font-family:var(--mono);font-size:11.5px;color:var(--faint);letter-spacing:0}
+  .copy{margin-left:auto;border:1px solid var(--line);background:transparent;color:var(--muted);
+        font:500 11.5px var(--sans);padding:5px 11px;border-radius:7px;cursor:pointer;transition:.12s}
+  .copy:hover{border-color:var(--line-2);color:var(--text)}
+  pre{margin:0;padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--text)}
+  .pane{display:none}.pane.on{display:block}
+  .kw{color:var(--text);font-weight:600}.str{color:var(--teal)}.cm{color:var(--faint)}.fn{color:var(--text);font-weight:500}.pu{color:var(--faint)}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0;max-width:70ch}
+  .card{border:1px solid var(--line);border-radius:10px;padding:16px 17px;background:var(--raise);color:var(--text);transition:.15s}
+  .card:hover{border-color:var(--line-2);background:var(--raise-2)}
+  .card b{display:block;font-weight:600;margin-bottom:3px;font-size:14.5px}
+  .card span{color:var(--muted);font-size:13.5px}
+
+  .toc{padding:48px 16px;position:sticky;top:58px;height:calc(100vh - 58px);font-size:13px}
+  .toc .h{color:var(--faint);text-transform:uppercase;letter-spacing:.12em;font-size:10.5px;font-weight:600;margin:0 0 12px}
+  .toc a{display:block;color:var(--faint);padding:5px 0;transition:.12s}
+  .toc a:hover{color:var(--muted)} .toc a.on{color:var(--text);font-weight:500}
+
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:var(--faint);font-size:13px;
+         display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;max-width:70ch}
+  footer .yn button{margin-left:8px}
+  @media(max-width:1120px){.wrap{grid-template-columns:230px minmax(0,1fr)}.toc{display:none}}
+  @media(max-width:860px){.wrap{grid-template-columns:1fr}.side{display:none}main{padding:30px 22px 100px}h1{font-size:32px}h2{font-size:23px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark"></span> vapi</div>
+  <div class="search">Search<span class="k">⌘K</span></div>
+  <div class="spacer"></div>
+  <button class="ghost" id="theme" aria-label="Switch color theme">Dark</button>
+</header>
+
+<div class="wrap">
+  <nav class="side">
+    <div class="g">Getting started</div>
+    <a href="#">Introduction</a>
+    <a href="#" class="on">Quickstart</a>
+    <a href="#">Phone calls</a>
+    <a href="#">Web calls</a>
+    <a href="#">CLI</a>
+    <div class="g">Build</div>
+    <a href="#">Assistants</a>
+    <a href="#">Tools</a>
+    <a href="#">Squads</a>
+    <a href="#">Workflows</a>
+    <div class="g">Operate</div>
+    <a href="#">Observability</a>
+    <a href="#">API reference</a>
+    <a href="#">Security</a>
+  </nav>
+
+  <main>
+    <div class="crumb">Getting started &nbsp;›&nbsp; Quickstart</div>
+    <h1>Quickstart</h1>
+    <p class="lede">Create a voice agent and talk to it in your browser in about five minutes.</p>
+    <div class="meta"><span class="pill">5 min</span><span>Updated July 2026</span></div>
+
+    <aside class="note">
+      <span class="k">For agents</span>
+      <p>Building on Vapi with a coding agent like Claude Code or Cursor? Point it at <a href="https://github.com/saivsr/Manicule-Sample-Brief/blob/main/rebuild/AGENTS.md">AGENTS.md</a>. It gives an agent the two calls and the rules it needs to get this working without guessing.</p>
+    </aside>
+
+    <figure>
+      <div class="frame">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 164" role="img" aria-label="How a voice agent works: you speak, the Vapi pipeline turns your speech to text with a transcriber, writes a reply with the model, and turns it back to speech with a voice, and you hear it." font-family="Inter,sans-serif">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1.5 L8 5 L1 8.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+          <g id="mic" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="-3" y="-8.5" width="6" height="10.5" rx="3"/><path d="M-5.5 -1.5 a5.5 5.5 0 0 0 11 0"/><line x1="0" y1="4.5" x2="0" y2="7.5"/><line x1="-3.5" y1="7.5" x2="3.5" y2="7.5"/></g>
+          <g id="wave" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M-6 -2.5v5M-3 -6.5v13M0 -4v8M3 -6.5v13M6 -2.5v5"/></g>
+          <g id="model" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M-6 -3.5H6M-6 0H3.5M-6 3.5H0.5"/></g>
+          <g id="spk" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M-6 -3 L-2.5 -3 L1.5 -7 L1.5 7 L-2.5 3 L-6 3 Z"/><path d="M4 -3.5 a4.5 4.5 0 0 1 0 7"/></g>
+          <g id="hear" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M-3 -7 a8 8 0 0 1 0 14"/><path d="M1.5 -3.5 a4.5 4.5 0 0 1 0 7"/></g>
+        </defs>
+
+        <text x="4" y="16" fill="currentColor" font-size="12.5" font-weight="500" opacity="0.6" letter-spacing="0.03em">How a voice agent works</text>
+
+        <rect x="164" y="40" width="432" height="108" rx="16" fill="none" stroke="currentColor" stroke-opacity="0.16"/>
+        <text x="182" y="61" font-family="JetBrains Mono,monospace" font-size="11" fill="currentColor" opacity="0.5">vapi</text>
+
+        <use href="#mic"   transform="translate(56,90)"/>
+        <use href="#wave"  transform="translate(250,90)"/>
+        <use href="#model" transform="translate(380,90)"/>
+        <use href="#spk"   transform="translate(510,90)"/>
+        <use href="#hear"  transform="translate(704,90)"/>
+
+        <g fill="currentColor" text-anchor="middle">
+          <text x="56"  y="118" font-size="12.5" font-weight="500" opacity="0.9">You speak</text>
+          <text x="56"  y="132" font-size="10.5" opacity="0.45">your voice in</text>
+          <text x="250" y="118" font-size="12.5" font-weight="500" opacity="0.85">transcriber</text>
+          <text x="250" y="132" font-size="10.5" opacity="0.45">speech to text</text>
+          <text x="380" y="118" font-size="12.5" font-weight="500" opacity="0.85">model</text>
+          <text x="380" y="132" font-size="10.5" opacity="0.45">writes a reply</text>
+          <text x="510" y="118" font-size="12.5" font-weight="500" opacity="0.85">voice</text>
+          <text x="510" y="132" font-size="10.5" opacity="0.45">text to speech</text>
+          <text x="704" y="118" font-size="12.5" font-weight="500" opacity="0.9">You hear</text>
+          <text x="704" y="132" font-size="10.5" opacity="0.45">the reply out</text>
+        </g>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.5" marker-end="url(#ar)">
+          <line x1="78"  y1="90" x2="228" y2="90"/>
+          <line x1="272" y1="90" x2="358" y2="90"/>
+          <line x1="402" y1="90" x2="488" y2="90"/>
+          <line x1="532" y1="90" x2="684" y2="90"/>
+        </g>
+      </svg>
+      </div>
+      <figcaption>Your speech runs through a transcriber, a model, and a voice, and comes back as sound. The middle three are the part Vapi runs.</figcaption>
+    </figure>
+
+    <h2 id="build">What you'll build</h2>
+    <p>A voice agent that runs in your browser. You create the agent with one API call, connect to it with the Web SDK, and talk to it out loud. It takes about five minutes.</p>
+
+    <h2 id="before">Before you start</h2>
+    <p>You need a Vapi account and two keys from the <a href="#">dashboard</a>:</p>
+    <ul>
+      <li>your <strong>private key</strong>, used from your terminal to create the agent</li>
+      <li>your <strong>public key</strong>, used in the browser to connect to it</li>
+    </ul>
+    <aside class="note"><span class="k">Note</span><p>The private key stays on your machine or server. Only the public key belongs in browser code.</p></aside>
+
+    <h2 id="create">1. Create an agent</h2>
+    <p>Run this once. It returns an agent with an <code>id</code> that you use in the next step.</p>
+    <div class="code" data-code>
+      <div class="bar">
+        <button class="tab on" data-tab="curl">cURL</button>
+        <button class="tab" data-tab="node">Node</button>
+        <span class="file" style="margin-left:6px">create-agent</span>
+        <button class="copy">Copy</button>
+      </div>
+      <div class="pane on" data-pane="curl"><pre>curl -X POST <span class="str">"https://api.vapi.ai/assistant"</span> \
+  -H <span class="str">"Authorization: Bearer $VAPI_PRIVATE_KEY"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{
+    "name": "Support agent",
+    "model": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "messages": [{ "role": "system", "content": "You are Alex, a support agent for Acme." }]
+    },
+    "voice": { "provider": "11labs", "voiceId": "cgSgspJ2msm6clMCkdW9" },
+    "firstMessage": "Hi, this is Alex from Acme. How can I help?"
+  }'</span></pre></div>
+      <div class="pane" data-pane="node"><pre><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">"https://api.vapi.ai/assistant"</span>, {
+  method: <span class="str">"POST"</span>,
+  headers: {
+    Authorization: <span class="str">`Bearer ${process.env.VAPI_PRIVATE_KEY}`</span>,
+    <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>,
+  },
+  body: <span class="fn">JSON</span>.stringify({
+    name: <span class="str">"Support agent"</span>,
+    model: { provider: <span class="str">"openai"</span>, model: <span class="str">"gpt-4o"</span>,
+      messages: [{ role: <span class="str">"system"</span>, content: <span class="str">"You are Alex, a support agent for Acme."</span> }] },
+    voice: { provider: <span class="str">"11labs"</span>, voiceId: <span class="str">"cgSgspJ2msm6clMCkdW9"</span> },
+    firstMessage: <span class="str">"Hi, this is Alex from Acme. How can I help?"</span>,
+  }),
+});
+<span class="kw">const</span> assistant = <span class="kw">await</span> res.<span class="fn">json</span>();
+<span class="fn">console</span>.log(assistant.id); <span class="cm">// copy this id</span></pre></div>
+    </div>
+    <aside class="note res"><span class="k">Result</span><p>A JSON object with an <code>id</code> like <code>"a1b2c3d4-..."</code>. Copy it for the next step.</p></aside>
+
+    <h2 id="connect">2. Connect from your app</h2>
+    <p>Install the Web SDK and create a client with your public key.</p>
+    <div class="code" data-code>
+      <div class="bar"><span class="file">terminal</span><button class="copy">Copy</button></div>
+      <pre>npm install @vapi-ai/web</pre>
+    </div>
+    <div class="code" data-code>
+      <div class="bar"><span class="file">app.js</span><button class="copy">Copy</button></div>
+      <pre><span class="kw">import</span> Vapi <span class="kw">from</span> <span class="str">"@vapi-ai/web"</span>;
+
+<span class="kw">const</span> vapi = <span class="kw">new</span> <span class="fn">Vapi</span>(<span class="str">"YOUR_PUBLIC_KEY"</span>);</pre>
+    </div>
+
+    <h2 id="talk">3. Talk to it</h2>
+    <p>Start the call from a click, so the browser can ask for microphone access. Pass the agent <code>id</code> from step 1.</p>
+    <div class="code" data-code>
+      <div class="bar"><span class="file">index.html</span><button class="copy">Copy</button></div>
+      <pre><span class="pu">&lt;button onclick=</span><span class="str">"vapi.start('YOUR_ASSISTANT_ID')"</span><span class="pu">&gt;</span>Talk to the agent<span class="pu">&lt;/button&gt;</span></pre>
+    </div>
+    <aside class="note res"><span class="k">Result</span><p>After you click and allow the microphone, the agent opens with its <code>firstMessage</code>, listens, and answers out loud.</p></aside>
+
+    <figure>
+      <div class="frame">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 356" role="img" aria-label="Anatomy of an assistant: model writes the replies, voice sets how it sounds, transcriber turns speech into text, firstMessage is what it says first, and optional tools are actions it can take." font-family="Inter,sans-serif">
+        <defs>
+          <g id="a-model" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M-6 -3.5H6M-6 0H3.5M-6 3.5H0.5"/></g>
+          <g id="a-spk" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M-6 -3 L-2.5 -3 L1.5 -7 L1.5 7 L-2.5 3 L-6 3 Z"/><path d="M4 -3.5 a4.5 4.5 0 0 1 0 7"/></g>
+          <g id="a-wave" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M-6 -2.5v5M-3 -6.5v13M0 -4v8M3 -6.5v13M6 -2.5v5"/></g>
+          <g id="a-msg" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><rect x="-6.5" y="-6" width="13" height="9" rx="2.5"/><path d="M-3 3 l0 3 l3.4 -3"/></g>
+          <g id="a-tool" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 -7 L-3.5 1 L-0.5 1 L-1.5 7 L4 -1.5 L1 -1.5 Z"/></g>
+        </defs>
+
+        <text x="6" y="24" fill="currentColor" font-size="14" font-weight="500" opacity="0.85">Anatomy of an assistant</text>
+
+        <rect x="8" y="44" width="544" height="290" rx="16" fill="none" stroke="currentColor" stroke-opacity="0.24"/>
+        <text x="30" y="72" fill="currentColor" opacity="0.55" font-size="12" font-weight="500" font-family="JetBrains Mono,monospace">assistant</text>
+        <line x1="28" y1="90" x2="532" y2="90" stroke="currentColor" stroke-opacity="0.16"/>
+        <g stroke="currentColor" stroke-opacity="0.14"><line x1="28" y1="139" x2="532" y2="139"/><line x1="28" y1="188" x2="532" y2="188"/><line x1="28" y1="237" x2="532" y2="237"/><line x1="28" y1="286" x2="532" y2="286"/></g>
+        <line x1="46" y1="114" x2="46" y2="310" stroke="currentColor" stroke-opacity="0.16"/>
+
+        <use href="#a-model" transform="translate(46,114)"/>
+        <use href="#a-spk"   transform="translate(46,163)"/>
+        <use href="#a-wave"  transform="translate(46,212)"/>
+        <use href="#a-msg"   transform="translate(46,261)"/>
+        <use href="#a-tool"  transform="translate(46,310)"/>
+
+        <g font-family="JetBrains Mono,monospace" fill="currentColor" opacity="0.85" font-size="12.5">
+          <text x="70" y="118">model</text>
+          <text x="70" y="167">voice</text>
+          <text x="70" y="216">transcriber</text>
+          <text x="70" y="265">firstMessage</text>
+          <text x="70" y="314">tools</text>
+        </g>
+        <g fill="currentColor">
+          <text x="210" y="118" font-size="12.5" opacity="0.72">writes the replies (gpt-4o, and others)</text>
+          <text x="210" y="167" font-size="12.5" opacity="0.72">how it sounds (provider + voiceId)</text>
+          <text x="210" y="216" font-size="12.5" opacity="0.72">turns speech into text</text>
+          <text x="210" y="230" font-size="10.5" opacity="0.44">optional; a default is used if you omit it</text>
+          <text x="210" y="265" font-size="12.5" opacity="0.72">what it says when the call opens</text>
+          <text x="210" y="314" font-size="12.5" opacity="0.72">actions it can take</text>
+          <text x="210" y="328" font-size="10.5" opacity="0.44">optional; add when you need them</text>
+        </g>
+      </svg>
+      </div>
+      <figcaption>Transcriber and tools are optional; the rest you set yourself.</figcaption>
+    </figure>
+
+    <h2 id="parts">What each part does</h2>
+    <p>You'll usually touch three of the agent's fields, and you can change any one without touching the others:</p>
+    <ul>
+      <li><code>model</code> generates the replies. Swap <code>gpt-4o</code> for another provider or model.</li>
+      <li><code>voice</code> sets how it sounds. Change the provider or <code>voiceId</code>.</li>
+      <li>the transcriber turns what the caller says into text for the model. Vapi uses a default until you set your own.</li>
+    </ul>
+
+    <aside class="note"><span class="k">Shortcut</span><p>Just want it on a page with no build step? Paste the embed widget: a <code>&lt;script&gt;</code> tag plus a <code>&lt;vapi-widget public-key=… assistant-id=…&gt;</code> element, and the voice widget appears.</p></aside>
+
+    <h2 id="next">Where to go next</h2>
+    <div class="cards">
+      <a class="card" href="#"><b>Change its behavior</b><span>Edit the system prompt in <code>model.messages</code>.</span></a>
+      <a class="card" href="#"><b>Put it on a phone number</b><span>Take inbound and outbound calls.</span></a>
+      <a class="card" href="#"><b>Let it do things</b><span>Add tools so it can look up an order or transfer to a human.</span></a>
+      <a class="card" href="#"><b>Ship it safely</b><span>Move key handling to your server before production.</span></a>
+    </div>
+
+    <footer>
+      <span class="yn">Was this page helpful? <button class="ghost">Yes</button><button class="ghost">No</button></span>
+      <span>Edit on GitHub · Updated July 2026</span>
+    </footer>
+  </main>
+
+  <aside class="toc">
+    <p class="h">On this page</p>
+    <a href="#build">What you'll build</a>
+    <a href="#before">Before you start</a>
+    <a href="#create">Create an agent</a>
+    <a href="#connect">Connect</a>
+    <a href="#talk">Talk to it</a>
+    <a href="#parts">What each part does</a>
+    <a href="#next">Where to go next</a>
+  </aside>
+</div>
+
+<script>
+  const root = document.documentElement, tbtn = document.getElementById('theme');
+  tbtn.onclick = () => { const d = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', d ? 'light' : 'dark'); tbtn.textContent = d ? 'Dark' : 'Light'; };
+  document.querySelectorAll('.code').forEach(b => {
+    const btn = b.querySelector('.copy'); if (!btn) return;
+    btn.onclick = () => { const p = b.querySelector('.pane.on') || b.querySelector('pre');
+      navigator.clipboard.writeText(p.innerText.trim()); btn.textContent = 'Copied'; setTimeout(() => btn.textContent = 'Copy', 1400); };
+  });
+  document.querySelectorAll('[data-code]').forEach(b => b.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    b.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+    b.querySelectorAll('.pane').forEach(x => x.classList.remove('on'));
+    t.classList.add('on'); b.querySelector('[data-pane="'+t.dataset.tab+'"]').classList.add('on'); }));
+  const links = [...document.querySelectorAll('.toc a')];
+  const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const spy = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { links.forEach(a => a.classList.remove('on')); map.get(e.target.id)?.classList.add('on'); }
+  }), { rootMargin: '-72px 0px -72% 0px' });
+  document.querySelectorAll('main h2[id]').forEach(h => spy.observe(h));
+</script>
+</body>
+</html>

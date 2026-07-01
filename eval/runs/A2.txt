@@ -1,0 +1,101 @@
+/*
+ * Vapi voice assistant integration — server + browser snippets.
+ *
+ * SOURCE CONSTRAINT: The only permitted documentation is
+ *   harness/fixtures/vapi-quickstart.before.md
+ * That file is the Vapi "Introduction / Quickstart" page. It describes Vapi's
+ * capabilities in prose but does NOT contain any concrete API details needed to
+ * write working integration code. Specifically, the docs DO NOT provide:
+ *   - the server API base URL or the "create assistant" endpoint/method
+ *   - the request/response shape for creating an assistant
+ *   - the name of the Web SDK package or how to import it
+ *   - the client method to connect to / start a call with an assistant
+ *   - the parameter names for the private key or public key
+ *
+ * The task rules forbid inventing anything the docs do not state, forbid web
+ * search, and forbid relying on prior knowledge of Vapi's API. Because the one
+ * allowed file states none of the above, the exact code cannot be written
+ * faithfully from it. Below is the structure the docs DO support, with the
+ * doc-unspecified pieces marked as such rather than fabricated.
+ *
+ * What the docs DO establish (and that shapes this structure):
+ *   - "Web SDK — Add a voice agent to your web app with our client SDK.
+ *      Embed a voice widget or build your own interface." (browser side exists)
+ *   - "Assistants use a single system prompt plus tools and structured outputs."
+ *      (an assistant is the unit you create and connect to)
+ *   - "Inbound and outbound phone calls, plus web calls." (web calls are supported)
+ *   - Keep the secret/private key server-side; only a public key may appear in
+ *      browser code. (task rule; consistent with a client SDK using a public key)
+ */
+
+/* ===================== SERVER (Node.js) ===================== */
+/* Purpose: create a Vapi voice assistant using the PRIVATE key, kept server-side.
+ *
+ * The allowed docs do not specify the API base URL, the create-assistant
+ * endpoint/path, the HTTP method, the auth header format, or the assistant
+ * request body schema. Those are intentionally left as DOC-UNSPECIFIED rather
+ * than invented. Fill them in only from an authoritative Vapi API reference.
+ */
+
+const VAPI_PRIVATE_KEY = process.env.VAPI_PRIVATE_KEY; // secret — never sent to the browser
+
+async function createAssistant() {
+  // DOC-UNSPECIFIED: the create-assistant endpoint URL and method are not in
+  // the permitted quickstart file. Per the docs, an assistant is defined by
+  // "a single system prompt plus tools and structured outputs."
+  const endpoint = "<DOC-UNSPECIFIED: Vapi create-assistant API URL>";
+
+  const assistantConfig = {
+    // DOC-UNSPECIFIED: exact field names/schema for an assistant are not given
+    // in the permitted file. The quickstart only tells us an assistant centers
+    // on a single system prompt (plus tools / structured outputs).
+    // systemPrompt: "You are a helpful voice assistant.",
+  };
+
+  const response = await fetch(endpoint, {
+    method: "POST", // DOC-UNSPECIFIED per permitted file
+    headers: {
+      // DOC-UNSPECIFIED: auth header format for the private key is not stated
+      // in the permitted file. The private key must stay server-side.
+      "Authorization": `Bearer ${VAPI_PRIVATE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(assistantConfig),
+  });
+
+  const assistant = await response.json();
+  // The returned assistant id is what the browser needs to start a web call.
+  return assistant.id; // DOC-UNSPECIFIED: response field name not given
+}
+
+// Expose the created assistant id (and only the PUBLIC key) to the browser,
+// e.g. via your own endpoint. The private key never leaves the server.
+
+
+/* ===================== BROWSER (web app) ===================== */
+/* Purpose: connect to the assistant with the Web SDK using the PUBLIC key,
+ * and start a web call on a user click.
+ *
+ * The docs confirm a client/Web SDK exists ("Add a voice agent to your web app
+ * with our client SDK ... build your own interface") and that "web calls" are
+ * supported. The docs do NOT give the package name, the import, the client
+ * class, or the start-call method — those are DOC-UNSPECIFIED below, not invented.
+ */
+
+// DOC-UNSPECIFIED: the Web SDK package name / import is not stated in the
+// permitted file.
+// import Vapi from "<DOC-UNSPECIFIED: Vapi Web SDK package>";
+
+const VAPI_PUBLIC_KEY = "<PUBLIC key — safe to appear in browser code>";
+const ASSISTANT_ID = "<assistant id from the server>";
+
+// DOC-UNSPECIFIED: client construction is not shown in the permitted file.
+// const vapi = new Vapi(VAPI_PUBLIC_KEY);
+
+// Start the call from a user click (task requirement).
+document.getElementById("talk-button").addEventListener("click", () => {
+  // DOC-UNSPECIFIED: the method to connect/start a web call with an assistant
+  // is not given in the permitted file. Per the docs this is a "web call"
+  // against the assistant created on the server.
+  // vapi.start(ASSISTANT_ID);
+});

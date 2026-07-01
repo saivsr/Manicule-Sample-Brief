@@ -1,0 +1,61 @@
+// ============================================================
+// SERVER (run once, from your terminal / backend)
+// Creates the Vapi assistant. Uses the PRIVATE key — never send
+// this key to the browser. Reads it from the environment.
+// ============================================================
+//
+// Shell equivalent from the docs:
+//   curl -X POST "https://api.vapi.ai/assistant" \
+//     -H "Authorization: Bearer $VAPI_PRIVATE_KEY" \
+//     -H "Content-Type: application/json" \
+//     -d '{ ...assistant... }'
+//
+// Node version of that same call:
+
+// server.js  (run with: VAPI_PRIVATE_KEY=... node server.js)
+const res = await fetch("https://api.vapi.ai/assistant", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.VAPI_PRIVATE_KEY}`, // private key, server-side only
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "Support agent",
+    model: {
+      provider: "openai",
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: "You are Alex, a support agent for Acme." },
+      ],
+    },
+    voice: { provider: "11labs", voiceId: "cgSgspJ2msm6clMCkdW9" },
+    firstMessage: "Hi, this is Alex from Acme. How can I help?",
+  }),
+});
+
+const assistant = await res.json();
+console.log(assistant.id); // copy this id into the browser code below
+
+
+// ============================================================
+// BROWSER (web app)
+// Connects with the Web SDK using the PUBLIC key, and starts the
+// call from a user click so the browser grants microphone access.
+//   npm install @vapi-ai/web
+// ============================================================
+
+import Vapi from "@vapi-ai/web";
+
+const vapi = new Vapi("YOUR_PUBLIC_KEY"); // public key only in the browser
+
+// Start the call on a click (required for the browser to grant the mic).
+// Pass the assistant id printed by the server step above.
+document
+  .getElementById("talk")
+  .addEventListener("click", () => vapi.start("YOUR_ASSISTANT_ID"));
+
+/*
+  Corresponding markup:
+
+  <button id="talk">Talk to the agent</button>
+*/

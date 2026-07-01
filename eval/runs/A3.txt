@@ -1,0 +1,112 @@
+/*
+ * Vapi voice assistant integration — server + browser.
+ *
+ * SOURCE CONSTRAINT: The only documentation available is the Vapi
+ * "Quickstart / Introduction" snapshot. That page describes Vapi
+ * conceptually — it states:
+ *   - Vapi is a developer platform for building voice AI agents.
+ *   - "Web SDK": add a voice agent to your web app with the client SDK;
+ *     embed a voice widget or build your own interface.
+ *   - Assistants use a single system prompt plus tools and structured outputs.
+ *   - Vapi supports web calls (in addition to inbound/outbound phone calls).
+ *   - You can create/configure an assistant, then test it in the browser.
+ *
+ * The snapshot does NOT state any concrete API surface: no REST endpoints,
+ * no SDK package names, no method signatures, no request/response shapes,
+ * and no key-passing mechanics beyond the general secret-vs-public split.
+ * Per the task's strict rule ("If the docs do not state something, do not
+ * invent it"), the parts the docs do not specify are left as clearly marked
+ * <FILL FROM VAPI API/SDK REFERENCE> placeholders rather than fabricated.
+ *
+ * What the code below DOES commit to, because it is required by the task and
+ * consistent with the docs: the private/secret key stays server-side; only a
+ * public key is used in browser code; the assistant is created on the server;
+ * the browser connects and starts the call from a user click.
+ */
+
+
+/* ============================================================ */
+/* SERVER — creates the Vapi assistant. Runs server-side only.  */
+/* The secret/private key is read from the environment and      */
+/* never sent to the browser.                                   */
+/* ============================================================ */
+
+// Secret key stays here, server-side only (never shipped to the browser).
+const VAPI_PRIVATE_KEY = process.env.VAPI_PRIVATE_KEY;
+
+/**
+ * Create an assistant. Per the docs, an assistant is defined by a single
+ * system prompt (plus optional tools / structured outputs, omitted here for
+ * a minimal setup).
+ *
+ * The exact SDK/endpoint used to create an assistant is not given in the
+ * available docs, so it is marked below. Fill it in from the Vapi API
+ * reference / Web SDK guide that the docs point to under "Next steps".
+ */
+async function createAssistant() {
+  const assistant = {
+    // Single system prompt — the core of an assistant per the docs.
+    systemPrompt: "You are a helpful voice assistant. Greet the caller and help them.",
+  };
+
+  // <FILL FROM VAPI API REFERENCE>: the authenticated server-side call that
+  // creates the assistant using VAPI_PRIVATE_KEY and returns its id.
+  // The docs do not specify the endpoint/SDK method, so it is not invented here.
+  //
+  //   const created = await /* Vapi server API create-assistant call */(
+  //     assistant,
+  //     { apiKey: VAPI_PRIVATE_KEY }
+  //   );
+  //   return created.id;
+
+  return assistant; // returns the config; wire up the create call above
+}
+
+/**
+ * Expose the assistant id (or config) and the PUBLIC key to the browser.
+ * Only the public key crosses to the client — the private key never does.
+ */
+// app.get("/config", (req, res) => {
+//   res.json({
+//     publicKey: process.env.VAPI_PUBLIC_KEY,   // safe for the browser
+//     assistantId: /* id from createAssistant() */,
+//   });
+// });
+
+
+/* ============================================================ */
+/* BROWSER — connects to the assistant with the Web SDK and     */
+/* starts the call on a user click. Only the PUBLIC key here.   */
+/* ============================================================ */
+
+/*
+  <FILL FROM VAPI WEB SDK GUIDE>: import the Vapi Web SDK client.
+  The docs reference a "client SDK" for the web but do not name the
+  package or its API, so the import and client construction are left
+  for the Web SDK guide the docs link to.
+
+    import Vapi from "<vapi web sdk package>";
+*/
+
+// Only the PUBLIC key appears in browser code (per the task's key rule).
+// Fetched from the server /config endpoint so no key is hard-coded here.
+async function initVoiceAgent() {
+  const res = await fetch("/config");
+  const { publicKey, assistantId } = await res.json();
+
+  // Construct the Web SDK client with the public key.
+  // const vapi = new Vapi(publicKey);   // <FILL FROM VAPI WEB SDK GUIDE>
+
+  // Start the call from a user click (required: user gesture for mic access).
+  const button = document.getElementById("start-call");
+  button.addEventListener("click", () => {
+    // <FILL FROM VAPI WEB SDK GUIDE>: start a web call to the assistant.
+    // The docs confirm Vapi supports web calls and that you talk to the
+    // assistant in the browser, but do not give the start-call method,
+    // so it is marked rather than invented.
+    //
+    //   vapi.start(assistantId);   // begin the web call → user can talk
+  });
+}
+
+// initVoiceAgent();

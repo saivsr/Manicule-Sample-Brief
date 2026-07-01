@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can a coding agent build from your docs?</title>
+<meta name="description" content="Measure whether a coding agent can build a correct integration from a documentation page, using a rebuilt Vapi quickstart that goes from 62 to 100.">
+<link rel="canonical" href="https://manicule-sample-brief-posg.vercel.app/essay">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Can a coding agent build from your docs?">
+<meta property="og:description" content="A reproducible way to measure whether a coding agent can build a correct integration from a documentation page.">
+<meta property="og:url" content="https://manicule-sample-brief-posg.vercel.app/essay">
+<meta name="author" content="Sai Vsr">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","headline":"Can a coding agent build from your docs?","description":"A reproducible way to measure whether a coding agent can build a correct integration from a documentation page.","datePublished":"2026-07-01","dateModified":"2026-07-01","author":{"@type":"Person","name":"Sai Vsr","url":"https://github.com/saivsr"},"publisher":{"@type":"Organization","name":"Sai Vsr"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://manicule-sample-brief-posg.vercel.app/essay"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How is this different from a human reviewing the docs?","acceptedAnswer":{"@type":"Answer","text":"A human review checks whether the page reads clearly. The eval checks whether an agent can build correct code from it, which is a separate question and the one that fails without warning. Keep the human review and add the eval as a gate."}},{"@type":"Question","name":"Do I still need an AGENTS.md or an llms.txt?","acceptedAnswer":{"@type":"Answer","text":"Maybe. The evidence says those files do not reliably help, so treat them as candidates rather than cures. Add one, then measure whether an agent scores higher with it than without. If it does not, it is dead weight."}},{"@type":"Question","name":"What do I need to run this on my own docs?","acceptedAnswer":{"@type":"Answer","text":"A coding agent, one integration page, a fixed task, and your API's spec to grade against. Run each condition a few times so a single lucky run does not set the score, and cap anything that leaks a secret into client code."}}]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#0B8270; --teal-2:#0A6E5F;
+    --bg:#FAF7EF; --raise:#FFFFFF; --raise-2:#F3EEE1;
+    --line:rgba(10,16,32,.11); --line-2:rgba(10,16,32,.20);
+    --text:rgba(10,16,32,.90); --muted:rgba(10,16,32,.56); --faint:rgba(10,16,32,.40);
+    --ink:rgba(10,16,32,.84);
+    --sans:'Inter',ui-sans-serif,system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  html[data-theme="dark"]{
+    --teal:#35C0A6; --teal-2:#5FD3BE;
+    --bg:#05070D; --raise:#0A0E16; --raise-2:#0D121B;
+    --line:rgba(255,250,235,.10); --line-2:rgba(255,250,235,.18);
+    --text:rgba(255,250,235,.90); --muted:rgba(255,250,235,.55); --faint:rgba(255,250,235,.37);
+    --ink:rgba(255,250,235,.90);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:17px;line-height:1.75;
+       letter-spacing:-.006em;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  a{color:var(--teal);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--teal) 35%,transparent)}
+  a:hover{color:var(--teal-2);border-bottom-color:var(--teal-2)}
+  ::selection{background:rgba(10,16,32,.12)}
+  html[data-theme="dark"] ::selection{background:rgba(255,250,235,.14)}
+
+  .top{position:sticky;top:0;z-index:30;display:flex;align-items:center;height:56px;padding:0 22px;
+       background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px) saturate(1.2);
+       border-bottom:1px solid var(--line)}
+  .top .back{color:var(--muted);font-size:13.5px;font-weight:500;border:0}
+  .top .back:hover{color:var(--text)}
+  .spacer{flex:1}
+  .ghost{border:1px solid var(--line);background:transparent;color:var(--muted);height:32px;padding:0 13px;
+         border-radius:8px;font:500 13px var(--sans);cursor:pointer;transition:.15s}
+  .ghost:hover{border-color:var(--line-2);color:var(--text)}
+
+  main{max-width:660px;margin:0 auto;padding:60px 24px 40px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:20px}
+  h1{font-size:37px;line-height:1.12;letter-spacing:-.032em;font-weight:600;margin:0 0 .5em}
+  .dek{font-size:19.5px;line-height:1.5;color:var(--muted);margin:.2em 0 1.1em;letter-spacing:-.012em}
+  .byline{font-size:13.5px;color:var(--faint);margin:0 0 8px;padding-bottom:26px;border-bottom:1px solid var(--line)}
+  h2{font-size:24px;letter-spacing:-.02em;font-weight:600;margin:1.9em 0 .5em}
+  h3{font-size:17px;letter-spacing:-.01em;font-weight:600;margin:1.6em 0 .35em}
+  p{margin:1.15em 0}
+  strong{font-weight:600}
+  code{font-family:var(--mono);font-size:.82em;background:var(--raise-2);border:1px solid var(--line);
+       padding:.5px 5px;border-radius:5px;letter-spacing:0}
+
+  .code{margin:26px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--raise)}
+  .code .bar{display:flex;align-items:center;height:38px;padding:0 14px;border-bottom:1px solid var(--line)}
+  .code .file{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+  pre{margin:0;padding:15px 18px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--muted)}
+  .tabs{gap:2px;padding:0 8px}
+  .tab{border:0;background:transparent;color:var(--faint);font:500 12.5px var(--sans);padding:7px 11px;border-radius:7px;cursor:pointer;transition:.12s}
+  .tab:hover{color:var(--muted)} .tab.on{background:var(--raise-2);color:var(--text)}
+  .abwidget .pane{display:none} .abwidget .pane.on{display:block}
+
+  /* figures are line-art on the page, no card */
+  figure{margin:34px 0;color:var(--ink)}
+  figure svg{display:block;width:100%;height:auto}
+  figcaption{color:var(--faint);font-size:12.5px;margin-top:12px}
+
+  footer{max-width:660px;margin:0 auto;padding:0 24px 100px}
+  .foot{border-top:1px solid var(--line);padding-top:24px;display:flex;flex-wrap:wrap;gap:10px 22px;font-size:14px}
+  .foot a{border:0;color:var(--muted);font-weight:500}
+  .foot a:hover{color:var(--text)}
+  @media(max-width:640px){main{padding:40px 20px 30px}h1{font-size:30px}body{font-size:16px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="back" href="/">&larr;&nbsp; The quickstart rebuild</a>
+  <div class="spacer"></div>
+  <button class="ghost" id="theme" aria-label="Switch color theme">Dark</button>
+</header>
+
+<main>
+  <article>
+  <div class="eyebrow">Essay</div>
+  <h1>Can a coding agent build from your docs?</h1>
+  <p class="dek">A coding agent can write a broken integration from your docs and never signal it. Score whether yours holds up.</p>
+  <p class="byline">By Sai Vsr &middot; <time datetime="2026-07-01">July 2026</time></p>
+
+  <p>A coding agent will read your quickstart and write an integration straight from it. When the page is thin, that code looks right and runs in the demo, and the mistake surfaces later, in production, on a customer's app with your name on the integration. Nothing fails at build time, because nothing it got wrong is a syntax error. This is not an edge case: <a href="https://survey.stackoverflow.co/2025/ai">most professional developers now use AI coding tools daily</a>, and the agents that take a whole task and write the integration are a growing part of that.</p>
+
+  <p>Your documentation has a second reader now, and it complains differently from the first. A confused human files a support ticket, which is a signal you can act on. When an agent gets confused, it writes something plausible and moves on, and you never hear about it. That is the failure mode Dachary Carey names in <a href="https://dacharycarey.com/2026/02/26/llms-vs-agents-as-docs-consumers/">her split between LLMs and agents as docs readers</a>: the agent gets truncated or thin content, returns a wrong answer, and neither you nor the developer ever finds out.</p>
+
+  <figure>
+    <svg viewBox="0 0 560 168" role="img" aria-label="When the page fails its reader: a person gets stuck and files a support ticket, which is a signal you can act on; an agent gets stuck, ships plausible code, and nothing reaches you." font-family="Inter,sans-serif">
+      <defs>
+        <marker id="ea" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1.5 L8 5 L1 8.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker>
+        <g id="person" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="0" cy="-5" r="4"/><path d="M-7 8 a7 7 0 0 1 14 0"/></g>
+        <g id="bot" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="-6.5" y="-5" width="13" height="12" rx="3"/><line x1="0" y1="-5" x2="0" y2="-9"/><circle cx="0" cy="-9.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="-2.6" cy="1" r="1.2" fill="currentColor" stroke="none"/><circle cx="2.6" cy="1" r="1.2" fill="currentColor" stroke="none"/></g>
+      </defs>
+
+      <text x="4" y="15" fill="currentColor" font-size="11" font-weight="500" opacity="0.55" letter-spacing="0.04em" style="text-transform:uppercase">When the page fails its reader</text>
+      <line x1="4" y1="94" x2="556" y2="94" stroke="currentColor" stroke-opacity="0.09"/>
+
+      <use href="#person" transform="translate(26,58)"/>
+      <g fill="currentColor"><text x="50" y="54" font-size="13.5" font-weight="500" opacity="0.9">A person gets stuck</text><text x="50" y="71" font-size="11.5" opacity="0.5">and files a support ticket</text></g>
+      <line x1="262" y1="58" x2="300" y2="58" fill="none" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.5" marker-end="url(#ea)"/>
+      <circle cx="318" cy="58" r="4.5" fill="currentColor"/>
+      <text x="332" y="62" fill="currentColor" font-size="13" opacity="0.85">a signal you can act on</text>
+
+      <use href="#bot" transform="translate(26,126)"/>
+      <g fill="currentColor"><text x="50" y="122" font-size="13.5" font-weight="500" opacity="0.9">An agent gets stuck</text><text x="50" y="139" font-size="11.5" opacity="0.5">and ships plausible code</text></g>
+      <line x1="262" y1="126" x2="300" y2="126" fill="none" stroke="currentColor" stroke-width="1.3" stroke-opacity="0.3" stroke-dasharray="2 4" marker-end="url(#ea)"/>
+      <circle cx="318" cy="126" r="4.5" fill="none" stroke="currentColor" stroke-opacity="0.4" stroke-dasharray="2 2.5"/>
+      <text x="332" y="130" fill="currentColor" font-size="13" opacity="0.5">nothing reaches you</text>
+    </svg>
+    <figcaption>Both readers hit the same thin page. Only one of them leaves a trace.</figcaption>
+  </figure>
+
+  <h2>We already gate code this way</h2>
+
+  <p>We know how to handle code we cannot eyeball for correctness: we write a test that fails when the code breaks, and nobody merges a function just because it reads well. Documentation an agent builds from carries the same weight, yet the bar we hold it to is that a human skimmed it and felt it was clear. A page a person skims and calls clear can still leave a model short, because the model has to produce working code and cannot stop to ask a question.</p>
+
+  <p>The metric falls out of that comparison. Give a coding agent one fixed integration task, let it read a single docs page and nothing else, and grade the code it writes against the API's own specification: the endpoints and methods it called either exist and are shaped right, or they do not. A page that carries its weight produces correct code. A page that forces the agent to guess turns those guesses into failures you can count.</p>
+
+  <p>Most current advice fixes on the wrong question, whether a page ships an <code>AGENTS.md</code> or an <code>llms.txt</code>. The question that predicts anything is whether an agent can build the integration from the page in front of it. That is the one worth measuring.</p>
+
+  <h2>The proof: rebuilding a real quickstart</h2>
+
+  <p>I tried this on <a href="https://vapi.ai">Vapi</a>, a voice-AI platform whose quickstart promises a working agent in five minutes, then asks you to choose among several entry points with the real code a page or two away. A person reads it and does fine; an agent hits a wall, because the page describes the product without ever stating the API, so the only way to integrate is to leave.</p>
+
+  <p>The eval is one fixed task: integrate Vapi's voice calling. The agent gets a single page as its only source and writes whatever code it can.</p>
+
+  <figure>
+    <svg viewBox="0 0 620 148" role="img" aria-label="How the eval works: one docs page goes to a coding agent, which writes code; a grader checks that code against Vapi's OpenAPI spec, with a private-key security veto, and returns a score out of 100." font-family="Inter,sans-serif">
+      <defs>
+        <marker id="pa" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1.5 L8 5 L1 8.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+        <g id="doc" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="-5.5" y="-8" width="11" height="16" rx="1.6"/><line x1="-2.5" y1="-4" x2="2.5" y2="-4"/><line x1="-2.5" y1="-1" x2="2.5" y2="-1"/><line x1="-2.5" y1="2" x2="1" y2="2"/></g>
+        <g id="agent2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="-6.5" y="-5" width="13" height="12" rx="3"/><line x1="0" y1="-5" x2="0" y2="-9"/><circle cx="0" cy="-9.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="-2.6" cy="1" r="1.2" fill="currentColor" stroke="none"/><circle cx="2.6" cy="1" r="1.2" fill="currentColor" stroke="none"/></g>
+        <g id="codeicon" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M-3 -6 L-8 0 L-3 6"/><path d="M3 -6 L8 0 L3 6"/></g>
+        <g id="check" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="0" cy="0" r="8"/><path d="M-3.5 0 L-1 3 L4 -3.5"/></g>
+      </defs>
+
+      <text x="4" y="15" fill="currentColor" font-size="11" font-weight="500" opacity="0.55" letter-spacing="0.04em" style="text-transform:uppercase">How the eval works</text>
+
+      <g text-anchor="middle" fill="currentColor">
+        <use href="#doc" transform="translate(40,54)"/>
+        <text x="40" y="80" font-size="12" opacity="0.85">one page</text>
+        <use href="#agent2" transform="translate(178,54)"/>
+        <text x="178" y="80" font-size="12" opacity="0.85">coding agent</text>
+        <use href="#codeicon" transform="translate(316,54)"/>
+        <text x="316" y="80" font-size="12" opacity="0.85">its code</text>
+        <use href="#check" transform="translate(454,54)"/>
+        <text x="454" y="80" font-size="12" opacity="0.85">the grader</text>
+        <text x="454" y="97" font-size="10" opacity="0.45">vs the OpenAPI spec</text>
+        <text x="454" y="110" font-size="10" opacity="0.45">private-key veto</text>
+        <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.6" stroke-linecap="round"><circle cx="582" cy="54" r="9"/><path d="M582 54 L586.5 49.5"/></g>
+        <text x="582" y="80" font-size="12" opacity="0.85">a score</text>
+        <text x="582" y="95" font-size="10" opacity="0.45">out of 100</text>
+      </g>
+
+      <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.5" marker-end="url(#pa)">
+        <line x1="60" y1="52" x2="160" y2="52"/>
+        <line x1="198" y1="52" x2="298" y2="52"/>
+        <line x1="336" y1="52" x2="436" y2="52"/>
+        <line x1="474" y1="52" x2="568" y2="52"/>
+      </g>
+    </svg>
+    <figcaption>The grader never sees which page produced the code, so it cannot favor the rebuild.</figcaption>
+  </figure>
+
+  <p>A grader then checks that code against Vapi's published OpenAPI spec, confirming the endpoints and methods it called are real and used the way the spec says. The grader never sees which page produced the code, so it cannot favor the rebuild, and correctness comes from the spec rather than my taste.</p>
+
+  <p>One rule sits above the score. If the private key turns up in client-side code, the result is capped no matter how clean the rest looks. An insecure integration is the exact thing this exercise exists to catch, so it does not earn partial credit. Each condition ran three times, so one lucky or unlucky run could not set the score.</p>
+
+  <p>Condition A gave the agent Vapi's current getting-started page. Told to invent nothing the docs left unstated, it averaged <strong>62 out of 100</strong> over three runs. It could not honestly do better, because the page never states the API. Compare the run that scored 54 with what the rebuild produced for the same step:</p>
+
+  <div class="code abwidget">
+    <div class="bar tabs">
+      <button class="tab on" data-ab="a">Current page &middot; 62</button>
+      <button class="tab" data-ab="b">Rebuild &middot; 100</button>
+    </div>
+    <pre class="pane on" data-pane="a">// const vapi = new Vapi(publicKey);   // &lt;FILL FROM VAPI WEB SDK GUIDE&gt;
+button.addEventListener("click", () =&gt; {
+  // &lt;FILL FROM VAPI WEB SDK GUIDE&gt;: start a web call to the assistant.
+});</pre>
+    <pre class="pane" data-pane="b">import Vapi from "@vapi-ai/web";
+
+const vapi = new Vapi("YOUR_PUBLIC_KEY");
+button.addEventListener("click", () =&gt; {
+  vapi.start("YOUR_ASSISTANT_ID"); // opens the mic and starts the call
+});</pre>
+  </div>
+
+  <p>An agent that stops here is doing the right thing: it hit a gap the page left and refused to guess past it. The failure that costs you is the agent that fills those blanks with a confident guess and ships it, and nobody notices until a customer does.</p>
+
+  <p>Condition B gave the agent a rebuild of the same page, organized around one runnable path from creating an assistant through connecting and talking to it, with an <code>AGENTS.md</code> beside it. Every snippet was checked against Vapi's spec before publishing. This time the agent scored <strong>100 out of 100</strong> on all three runs. Everything else was held constant; the only change was the page the agent read.</p>
+
+  <figure>
+    <svg viewBox="0 0 620 150" role="img" aria-label="Agent-comprehension score out of 100. Vapi's current page: 62. The rebuild with an AGENTS.md: 100. Each bar is the mean of three runs." font-family="Inter,sans-serif">
+      <text x="0" y="14" fill="currentColor" opacity="0.5" font-size="11" letter-spacing="0.06em" style="text-transform:uppercase">Agent-comprehension score, out of 100</text>
+      <g font-size="13.5">
+        <text x="0" y="52" fill="currentColor" opacity="0.72">Current page</text>
+        <rect x="0" y="62" width="620" height="22" rx="5" fill="currentColor" opacity="0.06"/>
+        <rect x="0" y="62" width="384" height="22" rx="5" fill="currentColor" opacity="0.32"/>
+        <text x="396" y="78" fill="currentColor" opacity="0.7" font-weight="600">62</text>
+      </g>
+      <g font-size="13.5">
+        <text x="0" y="112" fill="currentColor" opacity="0.72">Rebuild + <tspan font-family="JetBrains Mono,monospace" font-size="12">AGENTS.md</tspan></text>
+        <rect x="0" y="122" width="620" height="22" rx="5" fill="currentColor" opacity="0.06"/>
+        <rect x="0" y="122" width="620" height="22" rx="5" fill="currentColor" opacity="0.82"/>
+        <text x="584" y="138" fill="var(--raise)" font-weight="600">100</text>
+      </g>
+    </svg>
+    <figcaption>Each bar is the mean of three runs, graded blind against Vapi's OpenAPI spec. Nothing changed between the two but the page the agent read.</figcaption>
+  </figure>
+
+  <p>A gap this size, from one API and one task, is not a universal constant. What makes it worth trusting is how it was produced: a fixed task, a rubric from the spec, a veto on insecure code, and repeated runs, so the score reflects the page and not my read of it.</p>
+
+  <p>The gap is not about writing quality. Vapi's prose scores full marks on the docs-quality pass I run; what pulls its total down is structure, one runnable path where the live page offers four and the API stated in place instead of a link away. Structure is fixable, and measuring the page is what surfaced it.</p>
+
+  <figure>
+    <svg viewBox="0 0 610 186" role="img" aria-label="Vapi's current page scatters a developer across four entry points (dashboard, Web SDK, CLI, and a use-cases gallery); the rebuild replaces them with one path: create, then connect, then talk." font-family="Inter,sans-serif">
+      <defs>
+        <marker id="ia" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1.5 L8 5 L1 8.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker>
+      </defs>
+
+      <text x="4" y="18" fill="currentColor" font-size="11" font-weight="500" opacity="0.55" letter-spacing="0.04em" style="text-transform:uppercase">Four entry points, or one path</text>
+      <line x1="302" y1="40" x2="302" y2="172" stroke="currentColor" stroke-opacity="0.1"/>
+
+      <text x="4" y="44" fill="currentColor" font-size="12.5" opacity="0.62">the live page</text>
+      <circle cx="30" cy="112" r="3.5" fill="currentColor" opacity="0.6"/>
+      <text x="22" y="98" fill="currentColor" font-size="13" opacity="0.4">?</text>
+      <g fill="none" stroke="currentColor" stroke-width="1.3" stroke-opacity="0.3" marker-end="url(#ia)">
+        <path d="M38 109 C 90 80, 104 66, 144 62"/>
+        <path d="M38 111 C 90 96, 104 90, 144 90"/>
+        <path d="M38 113 C 90 126, 104 120, 144 118"/>
+        <path d="M38 115 C 90 148, 104 150, 144 146"/>
+      </g>
+      <g text-anchor="middle" font-size="12">
+        <g fill="none" stroke="currentColor" stroke-opacity="0.3"><rect x="148" y="50" width="122" height="24" rx="6"/><rect x="148" y="78" width="122" height="24" rx="6"/><rect x="148" y="106" width="122" height="24" rx="6"/><rect x="148" y="134" width="122" height="24" rx="6"/></g>
+        <g fill="currentColor" opacity="0.8"><text x="209" y="66">Dashboard</text><text x="209" y="94">Web SDK</text><text x="209" y="122">CLI</text><text x="209" y="150">Use-cases gallery</text></g>
+      </g>
+
+      <text x="326" y="44" fill="currentColor" font-size="12.5" opacity="0.62">the rebuild</text>
+      <g text-anchor="middle" font-size="12.5">
+        <g fill="none" stroke="currentColor" stroke-opacity="0.5"><rect x="326" y="99" width="76" height="28" rx="7"/><rect x="428" y="99" width="76" height="28" rx="7"/><rect x="530" y="99" width="76" height="28" rx="7"/></g>
+        <g fill="currentColor" opacity="0.85"><text x="364" y="117">Create</text><text x="466" y="117">Connect</text><text x="568" y="117">Talk</text></g>
+      </g>
+      <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.55" marker-end="url(#ia)">
+        <line x1="404" y1="113" x2="426" y2="113"/>
+        <line x1="506" y1="113" x2="528" y2="113"/>
+      </g>
+    </svg>
+    <figcaption>The same product in two shapes. The rebuild trades four ways in for one path a reader, or an agent, can follow start to finish.</figcaption>
+  </figure>
+
+  <h2>What adding an <code>AGENTS.md</code> gets you</h2>
+
+  <p>The reason to measure rather than assume is that the artifacts everyone ships right now do not reliably help. Adding an <code>AGENTS.md</code> to a repo gets treated as self-evidently good, and the evidence does not support that.</p>
+
+  <p>A recent <a href="https://arxiv.org/abs/2602.11988">evaluation of these context files</a> found that providing them, whether a human wrote the file or an LLM generated it, did not generally improve an agent's task success, and raised inference cost by more than twenty percent on average. A separate <a href="https://arxiv.org/abs/2511.12884">study of 2,303 of them across 1,925 repositories</a> found the files maintained like configuration, full of build commands and architecture notes, and light on the security and performance guidance an agent needs to write production-safe code.</p>
+
+  <p>The file gets added; the value does not follow. And <code>llms.txt</code>, the other artifact of the moment, <a href="https://www.digitalapplied.com/blog/google-llms-txt-no-seo-value-lighthouse-audit-2026">does nothing for Google Search or its AI answers</a> by Google's own statement, since Search ignores it. It works only at the narrower layer where an agent fetches a page directly, not the broad discoverability win it is often sold as.</p>
+
+  <p>None of that is a reason to abandon the artifacts, but it is a strong reason to stop trusting them unmeasured. A context file merged on faith still costs tokens and can cost correctness, and it tells you nothing about either, because no one checked what an agent did with it. Write the same file against a real task, test it, and it earns whatever it earns.</p>
+
+  <p>My rebuild's <a href="https://github.com/saivsr/Manicule-Sample-Brief/blob/main/rebuild/AGENTS.md"><code>AGENTS.md</code></a> earned its 100 because it was written against the task and then checked against the result. Without that check it would be one more file I hoped was helping, with no way to know.</p>
+
+  <p>Others have measured this before me. Mintlify has run a <a href="https://www.mintlify.com/blog/structured-docs-coding-agents">controlled experiment</a> showing structured docs gave coding agents roughly 64 percent more precise answers, about 39 percent better discoverability, half the token usage, and around 1.5 times faster responses against a no-docs baseline. Vercel has <a href="https://vercel.com/kb/guide/make-your-documentation-readable-by-ai-agents">made the point</a> that an agent fetching a docs page should get markdown, not HTML. What is still mostly missing from the public record is a method you can rerun end to end, with the task, the grader, the veto, and the scoring all specified. That reproducibility is the contribution.</p>
+
+  <h2>Make it a gate</h2>
+
+  <p>Treat agent-comprehension as a check that runs in your pipeline, the way CI gates code before it merges. Take your highest-traffic integration page, write one fixed task an agent should be able to finish from it, grade the output against your spec with a veto on the obvious security mistakes, and run it more than once so the number means something. After that, every edit to the page moves the number, and you learn whether a change helped or hurt before an agent meets it in the wild.</p>
+
+  <p>The score itself matters less than the method behind it. A fixed, spec-based test keeps working after the next model release changes how agents read a page, and it tells you plainly whether your docs hold up. Set it up once and you stop guessing.</p>
+
+  <h2>Common questions</h2>
+
+  <h3>How is this different from a human reviewing the docs?</h3>
+  <p>A human review checks whether the page reads clearly. The eval checks whether an agent can build correct code from it, which is a separate question and the one that fails without warning. Keep the human review and add the eval as a gate.</p>
+
+  <h3>Do I still need an <code>AGENTS.md</code> or an <code>llms.txt</code>?</h3>
+  <p>Maybe. The evidence says those files do not reliably help, so treat them as candidates rather than cures. Add one, then measure whether an agent scores higher with it than without. If it does not, it is dead weight.</p>
+
+  <h3>What do I need to run this on my own docs?</h3>
+  <p>A coding agent, one integration page, a fixed task, and your API's spec to grade against. Run each condition a few times so a single lucky run does not set the score, and cap anything that leaks a secret into client code.</p>
+  </article>
+</main>
+
+<footer>
+  <div class="foot">
+    <a href="/">Read the quickstart rebuild &rarr;</a>
+    <a href="https://github.com/saivsr/Manicule-Sample-Brief">The repo, eval, and harness &rarr;</a>
+  </div>
+</footer>
+
+<script>
+  const root = document.documentElement, tbtn = document.getElementById('theme');
+  tbtn.onclick = () => { const d = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', d ? 'light' : 'dark'); tbtn.textContent = d ? 'Dark' : 'Light'; };
+  document.querySelectorAll('.abwidget').forEach(w => w.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    w.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+    w.querySelectorAll('.pane').forEach(x => x.classList.remove('on'));
+    t.classList.add('on'); w.querySelector('[data-pane="' + t.dataset.ab + '"]').classList.add('on');
+  }));
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+// ============================================================
+// SERVER (Node.js) — run once to create the assistant.
+// Uses the PRIVATE key. Never ships to the browser.
+// Docs: POST https://api.vapi.ai/assistant  (Authorization: Bearer <private key>)
+// Returns an assistant with an `id`.
+// ============================================================
+
+// Run with: VAPI_PRIVATE_KEY=... node create-assistant.js
+const res = await fetch("https://api.vapi.ai/assistant", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.VAPI_PRIVATE_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "Support agent",
+    model: {
+      provider: "openai",
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: "You are Alex, a support agent for Acme." },
+      ],
+    },
+    voice: { provider: "11labs", voiceId: "cgSgspJ2msm6clMCkdW9" },
+    firstMessage: "Hi, this is Alex from Acme. How can I help?",
+  }),
+});
+
+const assistant = await res.json();
+console.log(assistant.id); // copy this id into the browser code below
+
+
+// ============================================================
+// BROWSER — connect with the Web SDK using the PUBLIC key,
+// and start the call from a user click (so the browser grants the mic).
+// Install: npm install @vapi-ai/web
+// ============================================================
+
+import Vapi from "@vapi-ai/web";
+
+// Public key only — safe to appear in client code.
+const vapi = new Vapi("YOUR_PUBLIC_KEY");
+
+// Start the call on a click. Pass the assistant `id` from the server step.
+document
+  .getElementById("talk")
+  .addEventListener("click", () => vapi.start("YOUR_ASSISTANT_ID"));
+
+// Corresponding markup:
+// <button id="talk">Talk to the agent</button>

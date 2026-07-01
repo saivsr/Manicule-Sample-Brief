@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.local
+*.log
+.DS_Store
+dist/
+bun.lockb
+package-lock.json
+.claude/
